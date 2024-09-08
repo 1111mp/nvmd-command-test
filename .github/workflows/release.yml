@@ -15,16 +15,23 @@ jobs:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
+            platform:
+            arch: x64
           - os: windows-latest
             target: aarch64-pc-windows-msvc
+            arch: arm64
           - os: macos-latest
             target: aarch64-apple-darwin
+            arch: arm64
           - os: macos-latest
             target: x86_64-apple-darwin
+            arch: x64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            arch: x64
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
+            arch: arm64
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Repository
@@ -37,7 +44,10 @@ jobs:
         run: cargo install toml-cli
 
       - name: Get Version
-        run: echo "VERSION=$(toml get Cargo.toml package.version)" >> $GITHUB_ENV
+        run: |
+          VERSION=$(toml get Cargo.toml package.version)
+          VERSION=${VERSION//\"/}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Add Rust Target
         run: rustup target add ${{ matrix.target }}
@@ -54,12 +64,17 @@ jobs:
       - name: Rename For Windows
         if: matrix.os == 'windows-latest'
         run: |
-          Rename-Item '.\target\${{ matrix.target }}\release\nvmd.exe' 'nvmd_${{ matrix.arch }}.exe'
+          Rename-Item '.\target\${{ matrix.target }}\release\nvmd.exe' 'nvmd_windows-${{ matrix.arch }}.exe'
 
-      - name: Rename For Unix
-        if: matrix.os != 'windows-latest'
+      - name: Rename For MacOS
+        if: matrix.os == 'macos-latest'
         run: |
-          Rename-Item '.\target\${{ matrix.target }}\release\nvmd' 'nvmd_${{ matrix.arch }}'
+          Rename-Item '.\target\${{ matrix.target }}\release\nvmd' 'nvmd_macos-${{ matrix.arch }}'
+
+      - name: Rename For Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          Rename-Item '.\target\${{ matrix.target }}\release\nvmd' 'nvmd_linux-${{ matrix.arch }}'
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
@@ -85,7 +100,10 @@ jobs:
         run: cargo install toml-cli
 
       - name: Get Version
-        run: echo "VERSION=$(toml get Cargo.toml package.version)" >> $GITHUB_ENV
+        run: |
+          VERSION=$(toml get Cargo.toml package.version)
+          VERSION=${VERSION//\"/}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
