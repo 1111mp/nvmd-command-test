@@ -48,9 +48,17 @@ jobs:
         with:
           cache-all-crates: true
 
+      - name: Install dependencies (ubuntu arm64 only)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get install -y gcc-aarch64-linux-gnu
+
       - name: Build Nvmd
         run: |
-          cargo build --release --target ${{ matrix.target }}
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
+            cargo build --release --target ${{ matrix.target }} -- -C linker=aarch64-linux-gnu-gcc
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
 
       - name: Rename For Windows
         if: matrix.os == 'windows-latest'
