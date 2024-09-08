@@ -1,0 +1,98 @@
+name: Release Build
+
+on: workflow_dispatch
+permissions: write-all
+
+env:
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install toml-cli
+        run: cargo install toml-cli
+
+      - name: Get Version
+        run: echo "VERSION=$(toml get Cargo.toml package.version)" >> $GITHUB_ENV
+
+      - name: Add Rust Target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-all-crates: true
+
+      - name: Build Nvmd
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+
+      - name: Rename For Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          Rename-Item '.\target\${{ matrix.target }}\release\nvmd.exe' 'nvmd_${{ matrix.arch }}.exe'
+
+      - name: Rename For Unix
+        if: matrix.os != 'windows-latest'
+        run: |
+          Rename-Item '.\target\${{ matrix.target }}\release\nvmd' 'nvmd_${{ matrix.arch }}'
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{env.VERSION}}
+          name: 'NVMD Command v${{env.VERSION}}'
+          body: 'More new features are now supported.'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            target/${{ matrix.target }}/release/*nvmd*
+
+  upload_temp_cmd:
+    name: Upload temp.cmd file
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install toml-cli
+        run: cargo install toml-cli
+
+      - name: Get Version
+        run: echo "VERSION=$(toml get Cargo.toml package.version)" >> $GITHUB_ENV
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{env.VERSION}}
+          name: 'NVMD Command v${{env.VERSION}}'
+          body: 'More new features are now supported.'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            template/temp.cmd
