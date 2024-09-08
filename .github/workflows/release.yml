@@ -95,7 +95,7 @@ jobs:
           body: 'More new features are now supported.'
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            nvmd_windows-*.exe
+            target/${{ matrix.target }}/release/nvmd_windows*.exe
             nvmd_macos-*
             nvmd_linux-*
 
