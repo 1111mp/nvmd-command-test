@@ -45,9 +45,15 @@ jobs:
 
       - name: Get Version
         run: |
-          VERSION=$(toml get Cargo.toml package.version)
-          VERSION=${VERSION//\"/}
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            $version = toml get Cargo.toml package.version
+            $version = $version.Trim('"')
+            echo "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          else
+            VERSION=$(toml get Cargo.toml package.version)
+            VERSION=${VERSION//\"/}
+            echo "VERSION=$VERSION" >> $GITHUB_ENV
+          fi
 
       - name: Add Rust Target
         run: rustup target add ${{ matrix.target }}
@@ -69,12 +75,12 @@ jobs:
       - name: Rename For MacOS
         if: matrix.os == 'macos-latest'
         run: |
-          Rename-Item '.\target\${{ matrix.target }}\release\nvmd' 'nvmd_macos-${{ matrix.arch }}'
+          mv '.\target\${{ matrix.target }}\release\nvmd' 'nvmd_macos-${{ matrix.arch }}'
 
       - name: Rename For Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
-          Rename-Item '.\target\${{ matrix.target }}\release\nvmd' 'nvmd_linux-${{ matrix.arch }}'
+          mv '.\target\${{ matrix.target }}\release\nvmd' 'nvmd_linux-${{ matrix.arch }}'
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
@@ -84,7 +90,7 @@ jobs:
           body: 'More new features are now supported.'
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            target/${{ matrix.target }}/release/*nvmd*
+            target/${{ matrix.target }}/release/nvmd_*
 
   upload_temp_cmd:
     name: Upload temp.cmd file
