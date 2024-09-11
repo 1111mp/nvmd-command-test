@@ -110,11 +110,14 @@ jobs:
       - name: Install Rust Stable
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install toml-cli
+        run: cargo install toml-cli
+
       - name: Get Version
         run: |
-          sudo apt-get update
-          sudo apt-get install jq
-          echo "VERSION=$(cat package.json | jq '.version' | tr -d '"')" >> $GITHUB_ENV
+          VERSION=$(toml get Cargo.toml package.version)
+          VERSION=${VERSION//\"/}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
