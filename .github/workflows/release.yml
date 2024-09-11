@@ -51,13 +51,15 @@ jobs:
       - name: Get Version (Linux/MacOS)
         if: runner.os != 'Windows'
         run: |
-          VERSION=$(grep '^version' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          sudo apt-get update
+          sudo apt-get install jq
+          echo "VERSION=$(cat package.json | jq '.version' | tr -d '"')" >> $GITHUB_ENV
 
       - name: Get Version (Windows)
         if: runner.os == 'Windows'
         run: |
-          $version = Get-Content Cargo.toml | Select-String -Pattern '^version' | ForEach-Object { $_ -replace 'version = "', '' -replace '"', '' }
+          choco install jq
+          $version = tomlq Cargo.toml | jq -r '.package.version'
           echo "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Install dependencies (ubuntu arm64 only)
