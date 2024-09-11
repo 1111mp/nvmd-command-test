@@ -48,18 +48,20 @@ jobs:
         with:
           cache-all-crates: true
 
+      - name: Install toml-cli
+        run: cargo install toml-cli
+
       - name: Get Version (Linux/MacOS)
         if: runner.os != 'Windows'
         run: |
-          sudo apt-get update
-          sudo apt-get install jq
-          echo "VERSION=$(cat package.json | jq '.version' | tr -d '"')" >> $GITHUB_ENV
+          VERSION=$(toml get Cargo.toml package.version)
+          VERSION=${VERSION//\"/}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Get Version (Windows)
         if: runner.os == 'Windows'
         run: |
-          choco install jq
-          $version = tomlq Cargo.toml | jq -r '.package.version'
+          $version = (toml get Cargo.toml package.version).Trim('"')
           echo "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Install dependencies (ubuntu arm64 only)
